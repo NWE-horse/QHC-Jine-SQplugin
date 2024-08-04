@@ -1,31 +1,31 @@
-# 插件配置信息
-ServerIp: 180.188.21.82 #服务器ip
-RconPort: 25001 #RCON 端口
-RconPassword: 9UneFErmhxU6Knmreo9QSbgVQiRXyLrt  #RCON 密码
-ServerPath: D:/squad1/SquadGame/Saved/Logs/SquadGame.log #服务器文件目录
-DataPath: D:\QHC-Jine-SQplugin-0.0.15\Data\sign.db #数据文件目录
+# Plugin config
+ServerIp:  #Server host
+RconPort:  #RCON port
+RconPassword:   #RCON password
+ServerPath: D:/squad1/SquadGame/Saved/Logs/SquadGame.log
+DataPath:  #Data file path
 AdminCfgPath: 0
-SignKeyWord: 签到 qd QD #抽奖关键词，如有多个用空格分隔
-TeamChange: 1 #跳边消耗积分数
-PointName: 青花豆 #积分名称
-LoopMessage: 欢迎来到青花瓷服务器，公屏输入：签到，可领取青花豆，游戏时长，嘎嘎乐等功能 #循环消息
-PrizeDraw: False #抽奖开关
-PrizeDrawKeyword: 嘎嘎乐 #抽奖关键词，如有多个用空格分隔
-PrizeDrawPoint: 50 #抽奖花费
-CreateSquadMinHours: 200  #全局最低建队时长
-GameHoursGetNum: 2 #游戏时长查询积分消耗
-UndisclosedInformationHandle: False #对未公开资料的建队事件处理
-UndisclosedPlyaerJoinCheckWarn: True #开启将播报所有进入玩家信息，关闭只播报异常玩家
-UndisclosedPlyaerJoinHandle: True #开启将禁止异常玩家进入
-RandomTeamTicks: 200 #打乱
-TeamChangeNumber : 2
-TeamKillMessage: 我超我超，player1 你痛击了你的队友 player2！请立刻道歉！
-KillWarnNumber: 50 #击杀提示兑换消耗
-AutoClearCount: 90 #挂机检测开始人数
-ConstraintCount: 4 #跳边人数平衡
-AdminPlyerJoin: None
-serverId: mxxy
-AdminPower: T1 T2 T3
+SignKeyWord:
+TeamChange:  #Teamchange Consume credits
+PointName:
+LoopMessage:
+PrizeDraw:
+PrizeDrawKeyword:
+PrizeDrawPoint:
+CreateSquadMinHours:
+GameHoursGetNum:
+UndisclosedInformationHandle:
+UndisclosedPlyaerJoinCheckWarn:
+UndisclosedPlyaerJoinHandle:
+RandomTeamTicks:
+TeamChangeNumber :
+TeamKillMessage:
+KillWarnNumber:
+AutoClearCount:
+ConstraintCount:
+AdminPlyerJoin:
+serverId:
+AdminPower:
 Ruls:
   1 :
     name : 3030 lav LAV

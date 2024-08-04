@@ -11,7 +11,6 @@ QHC-SQplugin is Squad server management plugin based on Rcon protocol provided b
 This project uses the `GPLv3` open source LICENSE, which means you need to follow the rules. See the [LICENSE](LICENSE) file for details.
 </div>
 
-
 ## Installation
 The following steps require that you have [Python 3.10](https://www.python.org/downloads/release/python-3100/) installed.
 ```bash
@@ -27,16 +26,13 @@ python rcon3.py
 ```
 
 ## Contact Information
-If you have any questions, please contact me in the following ways.
-
-QQ: [1659075882](https://qm.qq.com/q/LCSZ8ZZpcc)
-
+If you have any questions, please contact me in the following ways.\
+QQ: [1659075882](https://qm.qq.com/q/LCSZ8ZZpcc)\
 Mail: pigforme@163.com
+
+## Tanks
+Thanks to all the people and organizations that have provided help or support for QHC-SQplugin.\
+[青花瓷服务器]()
 
 ## License
 QHC-SQplugin is released under the [GPLv3](LICENSE)
-
-## 致谢
-感谢所有为 SCBassist 提供帮助或支持的人或组织。
-提供开发支持的组织:
-[青花瓷服务器]()

@@ -1,3 +1,9 @@
+# -*- coding: utf-8 -*-
+# @Time : 2024/5/1 3:05
+# @Author : Jnine
+# @File : rcon3.py
+# @Software : PyCharm
+
 import socket
 import sqlite3
 import struct
@@ -19,7 +25,7 @@ import copy
 import logging
 import sys
 
-# 配置全局日志记录
+# Configure global logging
 formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%Y/%m/%d %H:%M:%S')
 
 file_handler = logging.FileHandler('error.log')
@@ -31,40 +37,41 @@ logger.setLevel(logging.ERROR)
 logger.addHandler(file_handler)
 
 def log_uncaught_exception(exc_type, exc_value, exc_traceback):
-    """处理未捕获的异常并写入日志"""
+    """Handle uncaught exceptions and write them to the log"""
     if issubclass(exc_type, KeyboardInterrupt):
-        # 允许 KeyboardInterrupt 中断程序
+        # Allow KeyboardInterrupt
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
     else:
-        logger.error("未捕获的异常", exc_info=(exc_type, exc_value, exc_traceback))
+        logger.error("Uncaught exceptions", exc_info=(exc_type, exc_value, exc_traceback))
 
 sys.excepthook = log_uncaught_exception
 
-# 记录玩家飞天开始时间
+# Start time of the flight
 flight_start_times = {}
-# 记录团队所有玩家
+# All players on the team
 team_players = {}
+# Thread lock
 Player_Lock = threading.Lock()
 Player_Condition = threading.Condition(Player_Lock)
-# 引入一个 Event 对象来指示删除操作
+# An Event object is introduced to indicate the delete operation
 deletion_in_progress = threading.Event()
-# 玩家开始空闲时间
+# Start idle time
 outboard_start_time = {}
-# 是否进行检查操作
+# Whether the check operation is performed 0/1
 outboard_check = 0
-# 记录建队时间
+# Team create time
 squad_create = {}
-# 记录士兵id
+# Soldier id
 soldier_id = {}
-# 记录kd
+# Kill death
 kill_death = []
-# 记录游戏时长
+# Game duration stats
 game_time_stats = {}
-# 读取线程锁对象
+# Read the thread lock object
 config_lock = threading.Lock()
-# 等待连接完成的用户
+# Pending user connected
 pending_user_connected = {}
-# 警告次数
+# Warn count
 warn_count = {}
 
 def Readyaml(name):
@@ -81,9 +88,8 @@ class RconConnection:
         self.soh = {"size": 7, "id": 0, "type": self.types["response"], "body": "\x01"}
         self.keep_running = Event()
         self.keep_running.set()
-        self.response_queue = Queue()  # 创建一个队列用于主线程和子线程之间通信,整体响应
-        self.response_server = Queue()  # 创建一个队列用于主线程和子线程之间通信,服务器响应
-        # 设置定时器，每隔一段时间发送一次心跳包
+        self.response_queue = Queue()
+        self.response_server = Queue()
         threading.Timer(20, self.send_squad).start()
         threading.Timer(1, self.send_playerlist).start()
         # threading.Timer(240, self.send_thanks).start()
@@ -107,21 +113,12 @@ class RconConnection:
 
     def send_squad(self):
         self.send("ListSquads")
-        # 重新启动定时器，继续定时发送心跳包
         threading.Timer(20, self.send_squad).start()
 
     def send_playerlist(self):
         self.send("ListPlayers")
-        # 重新启动定时器，继续定时发送心跳包
         threading.Timer(1, self.send_playerlist).start()
 
-    # def send_thanks(self):
-    #     self.send('AdminBroadcast 服务器股东：单行、制霸、刘杵杵')
-    #     threading.Timer(240, self.send_thanks).start()
-    #
-    # def send_support(self):
-    #     self.send('AdminBroadcast 感谢技术支持：Wander_大杰')
-    #     threading.Timer(300, self.send_support).start()
 
     def _write(self, type, id, body=b''):
         size = 10 + len(body)
@@ -142,7 +139,6 @@ class RconConnection:
                     self._on_response(packet)
                 elif packet["type"] == self.types["server"]:
                     self.response_queue.put(packet['body'])
-                    # print("服务器信息:", packet["body"])
                 elif packet["type"] == self.types["command"]:
                     pass
 
@@ -168,13 +164,11 @@ class RconConnection:
         if packet["body"] != "\x01":
             self.response_string += packet['body']
         else:
-            # print('完整数据',self.response_string)
             self.response_server.put(self.response_string)
             self.response_string = ""
 
 class re_str:
     def __init__(self):
-        # 预编译正则表达式
         self.wound_pattern = re.compile(
             r'\[DedicatedServer\]ASQSoldier::Wound\(\): Player:(.+?) KillingDamage=(.+) from (.+) \(Online IDs: EOS: ([0-9a-f]{32}) steam: (\d{17})')
         self.kill_pattern = re.compile(
@@ -373,17 +367,17 @@ class re_str:
 class Base:
     def __init__(self):
         self.path = Readyaml('ServerPath')
-        self.UndisclosedPlyaerJoinCheckWarn = Readyaml('UndisclosedPlyaerJoinCheckWarn')  # 玩家加入检查
-        self.UndisclosedPlyaerJoinHandle = Readyaml('UndisclosedPlyaerJoinHandle')  # 异常玩家加入处理
+        self.UndisclosedPlyaerJoinCheckWarn = Readyaml('UndisclosedPlyaerJoinCheckWarn')
+        self.UndisclosedPlyaerJoinHandle = Readyaml('UndisclosedPlyaerJoinHandle')
         self.re_ = re_str()
         self.AdminPlyerJoin = Readyaml('AdminPlyerJoin')
         self.DataPath = Readyaml('DataPath')
-        self.RandomTeamTicks = Readyaml('RandomTeamTicks')  # 打乱票数
+        self.RandomTeamTicks = Readyaml('RandomTeamTicks')
         self.executor = ThreadPoolExecutor(max_workers=100)
         self.handle = ThreadPoolExecutor(max_workers=100)
-        self.log_queue = Queue()  # 使用类变量来存储日志队列
-        self.process = None  # 存储子进程的引用
-        self.thread = None  # 存储读取日志的线程引用
+        self.log_queue = Queue()
+        self.process = None
+        self.thread = None
 
     def get_server_player(self, rcon):
         rcon.send('ListPlayers')
@@ -418,10 +412,8 @@ class Base:
             return None
 
     def tail(self):
-        """新版日志推送"""
-        cmd = ["C:\\Program Files\\Git\\bin\\bash.exe"]  # 请确认bash.exe的实际路径
+        cmd = ["C:\\Program Files\\Git\\bin\\bash.exe"]  # Confirm the actual path to bash.exe
 
-        # 启动子进程的函数
         def start_process():
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                        text=True, encoding='utf-8')
@@ -431,7 +423,6 @@ class Base:
             print(f"子进程已启动，执行命令: {tail_cmd}")
             return process
 
-        # 如果之前有存储的进程，先终止它
         if self.process:
             self.process.kill()
 
@@ -440,11 +431,9 @@ class Base:
         def reader():
             try:
                 print("读取线程已启动")
-                # 使用 iter 和 readline 读取所有行并缓存到队列中
                 for line in iter(self.process.stdout.readline, ''):
                     if line:
                         if 'Vote_Faction' not in line and 'has physics bodies outside of MBP bounds' not in line:
-                            # print(f"读取到日志行: {line.strip()}")
                             self.log_queue.put(line)
                         else:
                             pass
@@ -454,7 +443,6 @@ class Base:
                 print("读取线程终止，结束进程")
                 self.process.kill()
 
-        # 启动日志读取线程
         self.thread = threading.Thread(target=reader, daemon=True)
         self.thread.start()
 
@@ -466,16 +454,13 @@ class Base:
             with open('../Data/JoinPlayers.json', "r", encoding='utf-8') as json_file:
                 existing_data = json.load(json_file)
         except FileNotFoundError:
-            # 如果文件不存在，则创建一个空的字典
             existing_data = {}
-            # 更新字典数据
         for steamid, values in player.items():
             if steamid not in existing_data:
                 existing_data[steamid] = values
 
-                # 将更新后的字典写入 JSON 文件
         with open('../Data/JoinPlayers.json', "w", encoding='utf-8') as json_file:
-            json.dump(existing_data, json_file, indent=4, ensure_ascii=False)  # indent 参数可选，用于指定缩进的空格数，使输出更易读
+            json.dump(existing_data, json_file, indent=4, ensure_ascii=False)
 
     def parse(self, rcon):
         global squad_create
@@ -483,13 +468,13 @@ class Base:
         global kill_death
         mod = moudel()
         if self.path == None:
-            print('未填写日志文件目录，取消跟踪日志')
+            print('Canceling trace logs.')
             return 0
         else:
             self.tail()
             while True:
                 line = self.log_queue.get()
-                print(f"解析日志行: {line.strip()}")
+                # print(f"Parsing log lines: {line.strip()}")
                 wound_json = self.re_.Wound_(line)
                 kill_json = self.re_.Kill_(line)
                 disconnect_json = self.re_.Disconnect(line)
@@ -533,53 +518,12 @@ class Base:
                     self.handle.submit(mod.welcome_user, soldier_json, rcon)
                 else:
                     pass
-                # if connection_json:
-                #     player = self.request_steam(connection_json['steamid'])
-                #     if player:
-                #         connection_json['name'] = player[0]
-                #         self.write(connection_json)
-                #     else:
-                #         connection_json['name'] = '未知'
-                #         self.write(connection_json)
-                #     player = {
-                #         'steamid': connection_json['steamid'],
-                #         'eosid': connection_json['eosid']
-                #     }
-                #     threading.Thread(target=self.pending_connectd, args=(connection_json,)).start()
-                #     threading.Thread(target=mod.connection_player, args=(player,)).start()
-                # elif won_math_json:
-                #     kill_deaths_copy = copy.deepcopy(kill_death)
-                #     team_players_copy = copy.deepcopy(team_players)
-                #     mod.record_stats(won_math_json['map'], won_math_json['team'], won_math_json['tickets'], kill_deaths_copy, team_players_copy)
-                #     squad_create = {}
-                #     outboard_start_time = {}
-                #     kill_death = []
-                #     self.remove_teamchange_log()
-                #     ticks = won_math_json['tickets']
-                #     print('本次对局结束,票差', ticks)
-                #     if int(ticks) > self.RandomTeamTicks:
-                #         threading.Thread(target=mod.random_player, args=(rcon,)).start()
-                # elif wound_json != 0:
-                #     threading.Thread(target=mod.killWarnHandle, args=(wound_json, rcon)).start()
-                # elif kill_json != 0:
-                #     threading.Thread(target=self.rcords_player_kd, args=(kill_json,)).start()
-                # elif disconnect_json != 0:
-                #     threading.Thread(target=mod.disconnection_player, args=(disconnect_json['eosid'],)).start()
-                # elif error_json != 0:
-                #     threading.Thread(target=mod.passive_anti_cheating, args=(error_json, rcon)).start()
-                # elif soldier_json:
-                #     threading.Thread(target=self.record_soldier_id, args=(soldier_json,)).start()
-                #     threading.Thread(target=mod.welcome_user, args=(soldier_json, rcon)).start()
-                # else:
-                #     pass
 
     def WritKillWarncfg(self, data):
         steamid = data
         t = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        # 读取配置文件
         config = configparser.ConfigParser()
         config.read('../Data/KillWarncfg.ini', encoding='utf-8')
-        # 写入数据
         try:
             rawtime = config[steamid]['time']
 
@@ -588,14 +532,12 @@ class Base:
                 newtime = rawtime + datetime.timedelta(hours=1)
             else:
                 newtime = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S") + datetime.timedelta(hours=1)
-            # 设置新的值
             config.set(steamid, 'time', str(newtime))
             with config_lock:
                 with open('../Data/KillWarncfg.ini', 'w', encoding='utf-8') as f:
                     config.write(f)
         except KeyError:
             t = datetime.datetime.strptime(t, "%Y-%m-%d %H:%M:%S") + datetime.timedelta(hours=1)
-            # 写入新section
             config[steamid] = {
                 'time': str(t)
             }
@@ -639,7 +581,6 @@ class Base:
 
             config.read('../Data/teamchange.ini')
 
-            # 检查给定的节是否存在，如果不存在，则创建一个新的节
             if not config.has_section(data):
                 config.add_section(data)
 
@@ -661,13 +602,11 @@ class Base:
             pass
 
     def read_sign(self, steam_id):
-        # 建立数据库连接
         if self.DataPath == 'None':
             path = '../Data/sign.db'
         else:
             path = self.DataPath
         connection = sqlite3.connect(path)
-        # 获取游标
         cursor = connection.cursor()
         query = "SELECT number, sign_date FROM Sign WHERE steam_id = ?"
         cursor.execute(query, (steam_id,))
@@ -682,37 +621,30 @@ class Base:
         cursor = None
         connection = None
         try:
-            # 建立数据库连接
             if self.DataPath == 'None':
                 path = '../Data/sign.db'
             else:
                 path = self.DataPath
             connection = sqlite3.connect(path)
-            # 获取游标
             cursor = connection.cursor()
 
-            # 执行更新数据库的操作
             update_query = "UPDATE Sign SET number = ? WHERE steam_id = ?"
             cursor.execute(update_query, (new_points, steamid))
 
-            # 提交事务
             connection.commit()
 
         except sqlite3.Error as e:
             print("数据库更新出错:", e)
 
         finally:
-            # 关闭游标和数据库连接
             cursor.close()
             connection.close()
 
     def rcords_squad_creat(self, data, steamid):
         global squad_create
 
-        # 将队伍信息存储为一个包含 'message' 键的字典
         squad_info = {'message': data}
 
-        # 直接将队伍信息存储到对应的steamid键中，覆盖之前的队伍信息
         squad_create[steamid] = squad_info
 
     def read_squad_creat(self, steamid):
@@ -755,7 +687,7 @@ class Base:
             'death': 1
         }
 
-        if wound is False:  # 检查是否是受伤，不是受伤则是死亡
+        if wound is False:
             for i in kill_death:
                 if i['steamid'] == killer_steamid and victim_team != killer_team:
                     i['kill'] += 1
@@ -768,7 +700,6 @@ class Base:
                 if victim_name != 'nullptr':
                     kill_death.append(victim_data)
         else:
-            # 受伤时记录受伤
             for i in kill_death:
                 if i['steamid'] == killer_steamid:
                     i['wound'] += 1
@@ -814,16 +745,16 @@ class moudel:
     def __init__(self):
         self.base = Base()
         self.re_ = re_str()
-        self.PointName = Readyaml('PointName')  # 积分名称
-        self.CreateSquadMinHours = Readyaml('CreateSquadMinHours')  # 最低建队时长
-        self.UndisclosedInformationHandle = Readyaml('UndisclosedInformationHandle')  # 未公开信息建队处理
-        self.TeamChangeNum = Readyaml('TeamChange')  # 跳边消耗积分
-        self.GameHoursGetNum = Readyaml('GameHoursGetNum')  # 游戏时长查询消耗积分
-        self.PrizeDrawPoint = Readyaml('PrizeDrawPoint')  # 抽奖花费
+        self.PointName = Readyaml('PointName')
+        self.CreateSquadMinHours = Readyaml('CreateSquadMinHours')
+        self.UndisclosedInformationHandle = Readyaml('UndisclosedInformationHandle')
+        self.TeamChangeNum = Readyaml('TeamChange')
+        self.GameHoursGetNum = Readyaml('GameHoursGetNum')
+        self.PrizeDrawPoint = Readyaml('PrizeDrawPoint')
         self.DataPath = Readyaml('DataPath')  # 数据目录
-        self.TeamChangeNumber = Readyaml('TeamChangeNumber')  # 跳边花费
-        self.KillWarnNumber = Readyaml('KillWarnNumber')  # 击杀提示花费
-        self.ConstraintCount = Readyaml('ConstraintCount')  # 平很人数
+        self.TeamChangeNumber = Readyaml('TeamChangeNumber')
+        self.KillWarnNumber = Readyaml('KillWarnNumber')
+        self.ConstraintCount = Readyaml('ConstraintCount')
         self.kdNumber = Readyaml('kdNumber')
 
     def draw_prize(self, chat_json, rcon):
@@ -848,13 +779,11 @@ class moudel:
                              args=(f'AdminBroadcast {name} 你还未拥有{self.PointName}，请先签到后再噶',)).start()
 
     def sign(self, chat_json, rcon):
-        # 建立数据库连接
         if self.DataPath == 'None':
             path = '../Data/sign.db'
         else:
             path = self.DataPath
         connection = sqlite3.connect(path)
-        # 获取游标
         cursor = connection.cursor()
         name = chat_json['name']
         steam_id = chat_json['steamID']
@@ -869,13 +798,12 @@ class moudel:
         night_start = datetime.datetime.strptime('21:00', '%H:%M').time()
         night_end = datetime.datetime.strptime('23:00', '%H:%M').time()
 
-        # 判断当前时间是否在指定的时间段内
         if early_morning_end < early_morning_start:
-            # 跨越午夜的情况，结束时间小于开始时间
+            # In the case of crossing midnight, the end time is less than the start time
             early_morning = (early_morning_start <= current_time <= datetime.time(23, 59, 59) or
                              datetime.time(0, 0, 0) <= current_time <= early_morning_end)
         else:
-            # 不跨越午夜的情况
+            # Not crossing midnight
             early_morning = early_morning_start <= current_time <= early_morning_end
         morning = morning_start <= current_time <= morning_end
         night = night_start <= current_time <= night_end
@@ -889,7 +817,7 @@ class moudel:
         if day == today:
             threading.Thread(target=rcon.send, args=(f'AdminWarn {steam_id} 今日已签到，请勿重复签到',)).start()
         else:
-            if day == 0:  # 没有记录
+            if day == 0:
                 insert_query = "INSERT INTO Sign (steam_id, name, number, sign_date) VALUES (?, ?, ?, ?)"
                 if early_morning is True:
                     number = number * 2
@@ -905,7 +833,7 @@ class moudel:
                 cursor.execute(insert_query, (steam_id, name, number, today))
                 connection.commit()
                 threading.Thread(target=rcon.send, args=(message,)).start()
-            else:  # 今日未签到
+            else:
                 if early_morning is True:
                     sum_number = (raw_num + number * 2)
                     message = f'AdminBroadcast 凌晨了，新的一天开始了！恭喜玩家{name}签到成功，获得200%凌晨签到加成，{self.PointName}+{number * 2} 剩余{self.PointName}: {sum_number}'
@@ -918,7 +846,6 @@ class moudel:
                 else:
                     sum_number = (raw_num + number)
                     message = f'AdminBroadcast 恭喜玩家{name}签到成功，{self.PointName}+{number} 剩余{self.PointName}: {sum_number}'
-                # 更新用户点数和签到日期
                 update_query = "UPDATE Sign SET number = ?, sign_date = ? WHERE steam_id = ?"
                 cursor.execute(update_query, (sum_number, today, steam_id))
                 connection.commit()
@@ -1018,7 +945,6 @@ class moudel:
                                  args=(f'AdminWarn {steamID} {self.PointName}不足，无法使用跳边功能',)).start()
             else:
                 if count < self.TeamChangeNumber:
-                    # 计算每个队伍的人数
                     team_size = {}
                     for team_id, players in team_players.items():
                         team_size[team_id] = len(players)
@@ -1129,7 +1055,6 @@ class moudel:
         death = wound_json['death']
         rawt = self.base.read_killwarn_cfg(actor)
         t = datetime.datetime.now()
-        # 获取击杀者和死者的队伍信息
         actor_team = None
         death_team = None
         death_steamid = None
@@ -1145,7 +1070,6 @@ class moudel:
         if actor_team != death_team:
             threading.Thread(target=self.base.rcords_player_kd, args=(wound_json,)).start()
             if death != 'nullptr':
-                # 被击倒提示
                 # threading.Thread(target=rcon.send, args=(f'AdminWarn {death_steamid} 被玩家 {actor_name} 击倒',)).start()
                 if rawt != 0 and datetime.datetime.strptime(rawt, "%Y-%m-%d %H:%M:%S") >= t:
                     threading.Thread(target=rcon.send, args=(f'AdminWarn {actor} 击倒敌人{death}',)).start()
@@ -1174,9 +1098,7 @@ class moudel:
                         else:
                             with lock:
                                 idle_time = current_time - outboard_start_time[player_id]['current_time']
-                                # 如果挂机时长超过了10分钟，清理玩家
-                                if idle_time > 10 * 60:  # 10分钟 = 10 * 60 秒
-                                    # 清理玩家的逻辑
+                                if idle_time > 10 * 60:  # m = 10 * 60 s
                                     print('清除玩家', player_id)
                                     del outboard_start_time[player_id]
                                     threading.Thread(target=send,
@@ -1191,13 +1113,10 @@ class moudel:
         global team_players
 
         if list_:
-            # 创建一个集合用于存储当前传入的玩家的 steamid
             current_steamids = {player['id'] for player in list_}
 
-            # 使用一个临时字典来构建新的 team_players
             new_team_players = {}
 
-            # 遍历 list_ 并更新玩家数据
             for player in list_:
                 steamid = player['id']
                 playername = player['name']
@@ -1213,17 +1132,14 @@ class moudel:
                 }
                 team_id = team
 
-                # 如果 team_id 不在 new_team_players 中，则用一个空列表初始化它
                 if team_id not in new_team_players:
                     new_team_players[team_id] = []
 
                 new_team_players[team_id].append(player_data)
 
-            # 检查并删除不在当前传入列表中的玩家
             for team_id, existing_players in team_players.items():
                 team_players[team_id] = [p for p in existing_players if p['steamid'] in current_steamids]
 
-            # 更新全局的 team_players
             team_players = new_team_players
 
 
@@ -1231,23 +1147,18 @@ class moudel:
         global team_players
         eosid = disconnect_json['eosid']
         print('玩家退出', eosid)
-        deletion_in_progress.set()  # 标志删除操作开始
+        deletion_in_progress.set()
         with Player_Lock:
             try:
-                # 遍历 team_players 中的所有队伍
                 for team_id, players in team_players.items():
-                    # 使用列表推导式过滤出不包含该玩家的新列表
                     updated_players = [player for player in players if player['eosid'] != eosid]
-                    # 更新 team_players 中的队伍数据
                     team_players[team_id] = updated_players
 
-                # 在玩家退出后，调用 TeamPlayerCountStat 函数更新玩家人数
-                # threading.Thread(target=self.TeamPlayerCountStat,args=([],)).start()
             except Exception as e:
                 print('删除玩家出错:', e)
             finally:
-                deletion_in_progress.clear()  # 标志删除操作结束
-                Player_Condition.notify_all()  # 通知所有等待的线程
+                deletion_in_progress.clear()
+                Player_Condition.notify_all()
                 remaining_player = len(team_players['1']) + len(team_players['2'])
                 print('剩余玩家', remaining_player)
 
@@ -1288,13 +1199,10 @@ class moudel:
         if difference > 10:
             steamid = self.base.read_soldier_steam(soldier)
             if steamid:
-                # 获取当前时间
                 now = datetime.datetime.now()
 
-                # 加上2个小时
                 end = now + datetime.timedelta(minutes=30)
 
-                # 格式化新时间
                 now_time = now.strftime('%m/%d %H:%M:%S')
                 end_time = end.strftime('%m/%d %H:%M:%S')
                 threading.Thread(target=rcon.send, args=(f'AdminBan {steamid} 0 [青花盾-Anti-Cheat]检测封禁，处理时间:{now_time}，申诉QQ群：834334294，申述截止时间{end_time}，Steamid64:{steamid}',)).start()
@@ -1312,57 +1220,44 @@ class moudel:
     def extract_op(self, rcon):
         power = Readyaml('AdminPower').split(' ')
         admin_list = self.re_.AdminPlayer()
-        # 用于存储管理员玩家的信息
         admin_info = []
-        # 读取管理员信息的列表
         admin_info_list = []
         for team_id, players in team_players.items():
-            # 遍历当前队伍的所有玩家
             for player in players:
-                # 获取玩家的 steamid 属性
                 steamid = player['steamid']
 
-                # 检查当前玩家的 steamid 是否在 admin_list 中
                 for admin_player in admin_list:
                     if steamid == admin_player['steamid'] and admin_player['power'] in power:
-                        # 如果是管理员玩家，则将其权限信息存储在 admin_teams 字典中
                         admin_info.append({
                             'name': player['name'],
                             'team': player['team'],
-                            'squad': player.get('squad')  # 获取玩家的小队信息，如果不存在则为 None
+                            'squad': player.get('squad')
                         })
                         threading.Thread(target=rcon.send,
                                          args=(f'AdminWarn {steamid} 有玩家正在呼叫OP，请及时处理',)).start()
                         break
-            # 遍历管理员信息列表，并限制只取前5个管理员信息
         if not admin_info:
             rcon.send("AdminBroadcast 当前无OP在线")
             return
         for i, admin in enumerate(admin_info):
             if i >= 3:
                 break
-            # 将管理员信息格式化为字符串，例如：steamid:team:squad
-            # chardet.detect(admin['name'].encode('utf-8'))
             admin_info_str = f"阵营：{admin['team']} 队伍：{admin['squad']} 名称:{admin['name']}"
             admin_info_list.append(admin_info_str)
 
-            # 将多个管理员信息拼接成一个字符串，以逗号分隔
             admin_info_combined = "\n".join(admin_info_list)
         threading.Thread(target=rcon.send,
                          args=(f'AdminBroadcast 当前共计{len(admin_info)}位OP在线\n{admin_info_combined}',)).start()
 
     def random_player(self, rcon):
         for team_id, players in team_players.items():
-            # 从每个团队中选取前20个玩家
             selected_players = players[-20:] if len(players) >= 20 else players
             if len(selected_players) < 20:
                 break
             for player in selected_players:
-                # 启动一个新的线程来执行AdminForceTeamChange命令
                 threading.Thread(target=rcon.send, args=(f'AdminForceTeamChange {player["steamid"]}',)).start()
 
     def record_stats(self, map, team, tickets, kill_deaths_copy, team_players_copy):
-        # team_name = team_name.replace('中国人民解放军','PLA')
         timestamp = time.time()
         url = 'http://150.138.84.157:3000/sqlite/write'
         for player in kill_deaths_copy:
@@ -1429,7 +1324,6 @@ class moudel:
         name = chat_json['name']
         try:
             data = requests.get(f'http://150.138.84.157:3000/player/{steamid}').json()
-            # 将history字段从字符串转换为数组
             data['history'] = json.loads(data['history'])
             wins = 0
             count = 0
@@ -1452,14 +1346,11 @@ class moudel:
         else:
             pass
 
-
 def ServerMessageHandle(rcon):
-    t = time.time()
     global flight_start_times
     match = re_str()
     mod = moudel()
-    t = str(time.time() - t)
-    print(f'服务器Rcon监控线程自检完成 耗时 {t[:4]}ms')
+    print(f'服务器Rcon监控线程启动')
     while True:
         decoded_data = rcon.response_queue.get()
         chat_json = match.chat(decoded_data)
@@ -1519,22 +1410,16 @@ def ServerMessageHandle(rcon):
                     minutes = int(flight_duration / 60)
                     seconds = int(flight_duration % 60)
                     rcon.send(f'AdminWarn {name} 飞天结束，本次飞天时长：{minutes} 分 {seconds} 秒')
-        # 在这里可以对解码后的数据进行处理
-
 
 def SquadLegalCheck(rcon):
-    t = time.time()
-
     match = re_str()
     mod = moudel()
-    t = str(time.time() - t)
-    print(f'队伍监控线程自检完成 耗时 {t[:4]}ms')
+    print(f'队伍监控线程启动')
     while True:
         server_data = rcon.response_server.get()
         squad_list = match.SqList(server_data)
         if squad_list != []:
             mod.SqLegal(squad_list, rcon)
-
 
 def AutoClearPlayer(rcon):
     mod = moudel()
@@ -1545,14 +1430,11 @@ def AutoClearPlayer(rcon):
         threading.Thread(target=mod.TeamPlayerCountStat, args=(playerlist,)).start()
         threading.Thread(target=mod.ClearPlayer, args=(playerlist, rcon.send)).start()
 
-
 def PlayerCountCheck():
-    t = time.time()
     AutoClearCount = Readyaml('AutoClearCount')
     global outboard_check
     global outboard_start_time
-    t = str(time.time() - t)
-    print(f'服务器人数监控线程自检完成 耗时 {t[:4]}ms')
+    print(f'服务器人数监控线程启动')
     while True:
         try:
             server_player_count = len(team_players['2']) + len(team_players['1'])
@@ -1560,12 +1442,10 @@ def PlayerCountCheck():
             server_player_count = 0
         if server_player_count < AutoClearCount:
             outboard_start_time = {}
-            # print('当前服务器人数',server_player_count,'不执行挂机检测')
             outboard_check = 0
         else:
             outboard_check = 1
         time.sleep(10)
-
 
 def squad_rcon():
     rcon = RconConnection()
@@ -1574,22 +1454,22 @@ def squad_rcon():
     port = Readyaml('RconPort')
     password = Readyaml('RconPassword')
     rcon.connect(port=port, host=ip, token=password)
-    # 服务器信息监控线程
+    # Server information monitoring thread
     threading.Thread(target=ServerMessageHandle, args=(rcon,),daemon=True).start()
-    # 小队检测线程
+    # Squad detection thread
     threading.Thread(target=SquadLegalCheck, args=(rcon,),daemon=True).start()
-    # 人数检测线程
+    # Player detection thread
     threading.Thread(target=PlayerCountCheck).start()
 
     threading.Thread(target=AutoClearPlayer, args=(rcon,),daemon=True).start()
 
-    # 日志监控线程
+    # Log monitoring thread
     base.parse(rcon)
 
 
 if __name__ == '__main__':
-    print(f'-----程序启动成功-----')
+    print(f'-----starting success-----')
     try:
         squad_rcon()
     except Exception as e:
-        print('程序出错：', e)
+        print('Application error：', e)
