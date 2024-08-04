@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>冲锋衣插件配置面板</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+                <h2>基础配置</h2>
+                <div class="row">
+                    <label class="col-label">服务器IP</label>
+                    <input type="text" class="col-input" name="ServerIp" id="ServerIp"><br>
+                </div>
+                <div class="row">
+                    <label class="col-label">Rcon 端口号</label>
+                    <input type="number" class="col-input" name="RconPort" id="RconPort"><br>
+                </div>
+                <div class="row">
+                    <label class="col-label">Rcon 密码</label>
+                    <input type="text" class="col-input" id="RconPassword" name="RconPassword">
+                </div>
+
+                <div class="row">
+                    <label class="col-label">文件目录</label>
+                    <input type="text" class="col-input" id="ServerPath" name="ServerPath">
+                </div>
+
+                <h2>积分配置</h2>
+
+                <div class="row">
+                    <label class="col-label">积分名称</label>
+                    <input type="text" class="col-input" name="PointName" id="PointName" >
+                </div>
+
+                <div class="row">
+                    <label class="col-label">签到开关<button id ="popup-Btn">签到人数统计</button></label>
+                    <input type="text" class="col-input" name="Sign" id="Sign" >
+                </div>
+                <div class="row">
+                    <label class="col-label">签到关键词</label>
+                    <input type="text" class="col-input" name="SignKeyWord" id="SignKeyWord" >
+                </div>
+                <div class="row">
+                    <label class="col-label">跳边消耗积分</label>
+                    <input type="number" class="col-input" name="TeamChange" id="TeamChange" >
+                </div>
+                <div class="row">
+                    <label class="col-label">查询游戏时长消耗积分</label>
+                    <input type="number" class="col-input" name="GameHoursGetNum" id="GameHoursGetNum" >
+                </div>
+
+                <h2>小队创建广播</h2>
+
+                <div class="row">
+                    <label class="col-label">小队创建广播</label>
+                    <input type="text" class="col-input" name="SquadCreateBroadcast" id="SquadCreateBroadcast" >
+                </div>
+                <div class="row">
+                    <label class="col-label">最低时长要求</label>
+                    <input type="text" class="col-input" name="CreateSquadMinHours" id="CreateSquadMinHours" >
+                </div>
+	<div class="row">
+                    <label class="col-label">禁止未公开玩家建队</label>
+                    <input type="text" class="col-input" name="UndisclosedInformationHandle" id="UndisclosedInformationHandle" >
+                </div>
+
+                <h2>玩家加入检查</h2>
+
+                <div class="row">
+                    <label class="col-label">播报所有玩家加入<br>0=关</label>
+                    <input type="text" class="col-input" name="UndisclosedPlyaerJoinCheckWarn" id="UndisclosedPlyaerJoinCheckWarn" >
+                </div>
+                <div class="row">
+                    <label class="col-label">禁止异常玩家加入<br>0=关</label>
+                    <input type="text" class="col-input" name="UndisclosedPlyaerJoinHandle" id="UndisclosedPlyaerJoinHandle" >
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
+<div id="popup-window" class="modal">
+  <!-- 弹窗内容 -->
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <div id="sign-content">
+        <p>签到人数统计</p>
+        <div id ='ls'></div>
+    </div>
+  </div>
+</div>
