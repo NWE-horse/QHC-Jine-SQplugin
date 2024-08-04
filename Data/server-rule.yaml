@@ -1,5 +1,4 @@
 # 插件配置信息
-
 ServerIp: 180.188.21.82 #服务器ip
 RconPort: 25001 #RCON 端口
 RconPassword: 9UneFErmhxU6Knmreo9QSbgVQiRXyLrt  #RCON 密码
@@ -33,5 +32,3 @@ Ruls:
     minhours : 200
     lock : None
     size : 0
-GroupBroadcast:
-  T0 :

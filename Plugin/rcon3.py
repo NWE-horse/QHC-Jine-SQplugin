@@ -64,7 +64,6 @@ game_time_stats = {}
 config_lock = threading.Lock()
 # 等待连接完成的用户
 pending_user_connected = {}
-
 # 警告次数
 warn_count = {}
 
@@ -72,7 +71,6 @@ def Readyaml(name):
     with open("../Data/server-rule.yaml", encoding='utf-8') as f:
         data = yaml.safe_load(f)
         return data[name]
-
 
 class RconConnection:
     def __init__(self):
@@ -173,7 +171,6 @@ class RconConnection:
             # print('完整数据',self.response_string)
             self.response_server.put(self.response_string)
             self.response_string = ""
-
 
 class re_str:
     def __init__(self):
